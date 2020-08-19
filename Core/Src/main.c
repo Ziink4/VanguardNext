@@ -135,37 +135,37 @@ int main(void)
   while (1)
   {
     // Can be used for debug or maybe to cutoff tail motor ?
-	  const bool button_pressed = (HAL_GPIO_ReadPin(Button_GPIO_Port, Button_Pin) == GPIO_PIN_RESET);
+    const bool button_pressed = (HAL_GPIO_ReadPin(Button_GPIO_Port, Button_Pin) == GPIO_PIN_RESET);
 
-	  if (MPU6050_ReadGyroscope(&mpu_handle) != MPU6050_Result_Ok)
-	  {
-	    Error_Handler();
-	  }
-	  else
-	  {
-	    uint32_t previous_tick = gyro_tick;
-	    gyro_tick = HAL_GetTick();
-	    uint32_t delta_tick = gyro_tick - previous_tick;
+    if (MPU6050_ReadGyroscope(&mpu_handle) != MPU6050_Result_Ok)
+    {
+      Error_Handler();
+    }
+    else
+    {
+      uint32_t previous_tick = gyro_tick;
+      gyro_tick = HAL_GetTick();
+      uint32_t delta_tick = gyro_tick - previous_tick;
 
-	    gyro_integral -= mpu_handle.Gyroscope_Z * delta_tick;
-	  }
+      gyro_integral -= mpu_handle.Gyroscope_Z * delta_tick;
+    }
 
-	  // Gyroscope outputs from -32768 to 32767
-	  // We discard negative values, and divide the output by 33 to get an approximate output from 0 to 1000
-	  // (in reality 0 to 993 because of rounding)
-	  uint16_t gyro_led_output = mpu_handle.Gyroscope_Z < 0 ? 0 : (mpu_handle.Gyroscope_Z / 33);
+    // Gyroscope outputs from -32768 to 32767
+    // We discard negative values, and divide the output by 33 to get an approximate output from 0 to 1000
+    // (in reality 0 to 993 because of rounding)
+    uint16_t gyro_led_output = mpu_handle.Gyroscope_Z < 0 ? 0 : (mpu_handle.Gyroscope_Z / 33);
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, gyro_led_output);
 
-	  // Update PID for tail
+    // Update PID for tail
     float tail_setpoint = 0;
     float tail_processvariable = gyro_integral;
 
-	  uint32_t previous_tick = tail_tick;
-	  tail_tick = HAL_GetTick();
-	  uint32_t delta_tick = tail_tick - previous_tick;
+    uint32_t previous_tick = tail_tick;
+    tail_tick = HAL_GetTick();
+    uint32_t delta_tick = tail_tick - previous_tick;
 
-	  float tail_output = PID_Compute(&tail_control, &tail_control_history, delta_tick, tail_setpoint, tail_processvariable);
-	  //__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, tail_output > 0.0 ? (uint32_t)tail_output : 0);
+    float tail_output = PID_Compute(&tail_control, &tail_control_history, delta_tick, tail_setpoint, tail_processvariable);
+    //__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, tail_output > 0.0 ? (uint32_t)tail_output : 0);
 
     /* USER CODE END WHILE */
 
