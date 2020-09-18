@@ -7,7 +7,7 @@
 
 #include <string.h>
 #include "sfhss.h"
-// #include "olog.h"
+#include "log.h"
 
 #define SFHSS_ENABLE_DMA_READFIFO
 //#define SFHSS_ENABLE_DMA_HOPPING
@@ -169,11 +169,11 @@ static bool parsePacket(SFHSSCTX *ctx, uint8_t *cmd)
 
     int rc = ctx->dmabuf[0];
     if (rc & CC2500_STATUS_CHIP_RDYn_BM){
-        OLOG_LOGW("SFHSS: failed packet recieve [%x]", rc);
+        LOG_LOGW("SFHSS: failed packet recieve [%x]", rc);
         return false;
     }
     if ((rc & CC2500_STATUS_FIFO_BYTES_AVAILABLE_BM) < PACKET_LENGTH){
-        OLOG_LOGE("SFHSS: insufficient packet data [%d]", rc & CC2500_STATUS_FIFO_BYTES_AVAILABLE_BM);
+        LOG_LOGE("SFHSS: insufficient packet data [%d]", rc & CC2500_STATUS_FIFO_BYTES_AVAILABLE_BM);
         return false;
     }
 
@@ -249,8 +249,8 @@ void sfhss_calibrate(SFHSSCTX* ctx)
         cc2500_readRegister(ctx->cc2500, CC2500_25_FSCAL1, &SFHSS_CALDATA(ctx));
     }
     ctx->phase = SFHSS_CALIBRATED;
-    OLOG_LOGI("SFHSS: retrieved %d ch calibrate data", sizeof(ctx->caldata));
-    olog_dumpmem(ctx->caldata, sizeof(ctx->caldata));
+    LOG_LOGI("SFHSS: retrieved %d ch calibrate data", sizeof(ctx->caldata));
+    log_dumpmem(ctx->caldata, sizeof(ctx->caldata));
 }
 
 SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
@@ -267,7 +267,7 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
         SFHSS_RESET_RECEIVED(ctx);
         cc2500_strobe(ctx->cc2500, CC2500_SRX);
         ctx->phase = SFHSS_START_BINDING;
-        OLOG_LOGD("SFHSS: change status to START-BINDING");
+        LOG_LOGD("SFHSS: change status to START-BINDING");
         break;
     }
 
@@ -281,7 +281,7 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
         ctx->intervalSum[1] = 0;
         ctx->phase = SFHSS_FINDING_RADIO;
         rc = SFHSSEV_START_FINDING;
-        OLOG_LOGD("SFHSS: change status to FINDING-RADIO");
+        LOG_LOGD("SFHSS: change status to FINDING-RADIO");
         break;
     }
 
@@ -289,8 +289,8 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
         if (ctx->received){
             ctx->phase = SFHSS_BINDING;
             rc = SFHSSEV_START_BINDING;
-            OLOG_LOGD("SFHSS: change status to BINDING");
-            OLOG_LOGI("SFHSS: found radio");
+            LOG_LOGD("SFHSS: change status to BINDING");
+            LOG_LOGI("SFHSS: found radio");
         }
         break;
     }
@@ -305,8 +305,8 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
                 int interval = ctx->interval[cmd & 1];
                 if (!(interval > LONG_INTERVAL_MIN && interval < LONG_INTERVAL_MAX)){
                     ctx->phase = SFHSS_START_BINDING;
-                    OLOG_LOGW("SFHSS: cannot bind with transmitter, retry to find radio");
-                    OLOG_LOGD("SFHSS: change status to START-BINDING");
+                    LOG_LOGW("SFHSS: cannot bind with transmitter, retry to find radio");
+                    LOG_LOGD("SFHSS: change status to START-BINDING");
                 }
             }
             if (ctx->measureCount[0] > BINDING_MEASURE_COUNT &&
@@ -314,13 +314,13 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
                 ctx->interval[0] = ctx->intervalSum[0] / (ctx->measureCount[0] - 1) / 30;
                 ctx->interval[1] = ctx->intervalSum[1] / (ctx->measureCount[1] - 1) / 30;
                 ctx->phase = SFHSS_BINDED;
-                OLOG_LOGI("SFHSS: binded with transmitter [%.4X]", ctx->txaddr);
-                OLOG_LOGD("SFHSS: change status to BINDED");
+                LOG_LOGI("SFHSS: binded with transmitter [%.4X]", ctx->txaddr);
+                LOG_LOGD("SFHSS: change status to BINDED");
             }
         }else if (now - ctx->rtime > LONG_INTERVAL_MAX){
             ctx->phase = SFHSS_START_BINDING;
-            OLOG_LOGW("SFHSS: cannot bind with transmitter due to missed radio, retry to find radio");
-            OLOG_LOGD("SFHSS: change status to START-BINDING");
+            LOG_LOGW("SFHSS: cannot bind with transmitter due to missed radio, retry to find radio");
+            LOG_LOGD("SFHSS: change status to START-BINDING");
         }
         break;
     }
@@ -334,7 +334,7 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
         cc2500_strobe(ctx->cc2500, CC2500_SRX);
         ctx->phase = SFHSS_CONNECTING1;
         rc = SFHSSEV_START_CONNECTING;
-        OLOG_LOGD("SFHSS: change status to CONNECTING1");
+        LOG_LOGD("SFHSS: change status to CONNECTING1");
         break;
     }
 
@@ -345,7 +345,7 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
             parsePacket(ctx, &cmd);
             if (!(cmd & 1)){
                 ctx->phase = SFHSS_CONNECTING2;
-                OLOG_LOGD("SFHSS: change status to CONNECTING2");
+                LOG_LOGD("SFHSS: change status to CONNECTING2");
             }
         }
         break;
@@ -359,11 +359,11 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
             if (cmd & 1){
                 if (ctx->ptime[1] - ctx->ptime[0] > ctx->interval[0] / 2){
                     ctx->phase = SFHSS_CONNECTING1;
-                    OLOG_LOGD("SFHSS: change status to CONNECTING1");
+                    LOG_LOGD("SFHSS: change status to CONNECTING1");
                 }else{
                     ctx->phase = SFHSS_CONNECTED;
-                    OLOG_LOGI("SFHSS: connect to transmitter [%.4X]", ctx->txaddr);
-                    OLOG_LOGD("SFHSS: change status to CONNECTED");
+                    LOG_LOGI("SFHSS: connect to transmitter [%.4X]", ctx->txaddr);
+                    LOG_LOGD("SFHSS: change status to CONNECTED");
                     nextChannel(ctx, ctx->hopcode);
                     chuneChannelFast(ctx);
                     rc = SFHSSEV_CONNECTED;
@@ -412,7 +412,7 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
                     ctx->phase = SFHSS_CONNECTED;
                 }
                 if (ctx->skipCount > 0){
-                    OLOG_LOGD("SFHSS: recover connection after skipping %d times", ctx->skipCount);
+                    LOG_LOGD("SFHSS: recover connection after skipping %d times", ctx->skipCount);
                     ctx->skipCount = 0;
                     ctx->ptime[((cmd & 1) + 1) & 1] = now;
                 }
@@ -457,8 +457,8 @@ SFHSS_EVENT sfhss_schedule(SFHSSCTX* ctx, int32_t now)
             ctx->stat.proc_ahopping_time += HRTIMER_GETTIME() - now;
         }else{
             ctx->phase = SFHSS_BINDED;
-            OLOG_LOGW("SFHSS: lost connection", ctx->txaddr);
-            OLOG_LOGD("SFHSS: change status to BINDED");
+            LOG_LOGW("SFHSS: lost connection", ctx->txaddr);
+            LOG_LOGD("SFHSS: change status to BINDED");
             rc = SFHSSEV_START_CONNECTING;
         }
         break;

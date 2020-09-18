@@ -30,7 +30,9 @@
 #include <stdbool.h>
 #include "mpu6050.h"
 #include "pid_control.h"
-#include "SEGGER_RTT.h"
+#include "log.h"
+#include "cc2500.h"
+#include "sfhss.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -80,14 +82,15 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  log_init();
+  LOG_LOGD("HAL init done");
   /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  LOG_LOGD("System clock init done");
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -96,7 +99,17 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  LOG_LOGD("Peripheral init done");
+  /* USER CODE END 2 */
 
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+
+//#define TEST_ALL 1
+//#define TEST_ECHO 1
+#define TEST_CC2500 1
+
+#if TEST_ALL
   // Gyro Interface
   MPU6050_t mpu_handle;
   if (MPU6050_Init(&mpu_handle, &hi2c1, MPU6050_Device_0, MPU6050_Accelerometer_2G, MPU6050_Gyroscope_250s) != MPU6050_Result_Ok)
@@ -104,7 +117,6 @@ int main(void)
     Error_Handler();
   }
 
-#if 0
   if (MPU6050_DMP_LoadFirmware(&mpu_handle) != MPU6050_Result_Ok)
   {
     Error_Handler();
@@ -114,7 +126,6 @@ int main(void)
   {
     Error_Handler();
   }
-#endif
 
   float gyro_integral = 0.0f;
   uint32_t gyro_tick = 0;
@@ -130,15 +141,6 @@ int main(void)
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
   uint32_t tail_max_output = 1000;
 
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-
-//#define TEST_ALL 1
-#define TEST_LOG 1
-
-#if TEST_ALL
   while (1)
   {
     // Can be used for debug or maybe to cutoff tail motor ?
@@ -176,16 +178,34 @@ int main(void)
   }
 #endif
 
-#if TEST_LOG
+#if TEST_ECHO
   char r;
 
-  SEGGER_RTT_WriteString(0, "SEGGER Real-Time-Terminal Sample\r\n");
-  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
+  LOG_LOGI("SEGGER Real-Time-Terminal Sample\r\n");
+
   do {
     r = SEGGER_RTT_WaitKey();
     SEGGER_RTT_Write(0, &r, 1);
     r++;
   } while (1);
+#endif
+
+#if TEST_CC2500
+  CC2500CTX cc2500_ctx;
+
+  if (!cc2500_init(&cc2500_ctx, RF_CSn_GPIO_Port, RF_CSn_Pin, &hspi1))
+  {
+	  Error_Handler();
+  }
+
+  LOG_LOGD("CC2500 init done");
+
+  SFHSSCTX sfhss_ctx;
+  sfhss_init(&sfhss_ctx, &cc2500_ctx);
+  sfhss_calibrate(&sfhss_ctx);
+
+  LOG_LOGD("S-FHSS init done");
+
 #endif
     /* USER CODE END WHILE */
 
@@ -244,7 +264,15 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  HAL_GPIO_WritePin(LED_Red_GPIO_Port, LED_Red_Pin, GPIO_PIN_SET);
+  LOG_LOGE("HAL error handler reached");
+
+  while(1)
+  {
+    HAL_GPIO_WritePin(LED_Red_GPIO_Port, LED_Red_Pin, GPIO_PIN_SET);
+    HAL_Delay(100);
+    HAL_GPIO_WritePin(LED_Red_GPIO_Port, LED_Red_Pin, GPIO_PIN_RESET);
+    HAL_Delay(100);
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 
@@ -261,6 +289,7 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  LOG_LOGE("Assertion failed: file %s on line %d\r\n", file, line);
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

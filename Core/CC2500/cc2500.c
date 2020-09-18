@@ -6,7 +6,7 @@
  */
 
 #include "cc2500.h"
-// #include "olog.h"
+#include "log.h"
 
 #define CS_UP(ctx)      HAL_GPIO_WritePin((ctx)->selector.ch, (ctx)->selector.pin, GPIO_PIN_SET)
 #define CS_DOWN(ctx)    HAL_GPIO_WritePin((ctx)->selector.ch, (ctx)->selector.pin, GPIO_PIN_RESET)
@@ -34,9 +34,9 @@ bool cc2500_init(CC2500CTX* ctx, GPIO_TypeDef* sel_ch, uint16_t sel_pin, SPI_Han
     uint8_t partnum, version;
     cc2500_readStatusRegister(ctx, CC2500_30_PARTNUM, &partnum);
     cc2500_readStatusRegister(ctx, CC2500_31_VERSION, &version);
-    OLOG_LOGI("CC2500: PARTNUM [%.2x], VERSION [%.2x]", partnum, version);
+    LOG_LOGI("CC2500: PARTNUM [%.2x], VERSION [%.2x]", partnum, version);
     if (partnum != CC2500_PARTNUM){
-        OLOG_LOGE("CC2500: PARTNUM is invalid, That means CC2500 migth not be working");
+        LOG_LOGE("CC2500: PARTNUM is invalid, That means CC2500 migth not be working");
     }
     cc2500_strobe(ctx, CC2500_SIDLE);
 
@@ -167,7 +167,7 @@ int cc2500_reset(CC2500CTX* ctx)
         }
     }while (rdata == 0xff);
     CS_UP(ctx);
-    OLOG_LOGI("CC2500: waited for reset at %d times", count);
+    LOG_LOGI("CC2500: waited for reset at %d times", count);
     return rc;
 }
 
@@ -194,7 +194,7 @@ int cc2500_readFIFO(CC2500CTX* ctx, uint8_t* buf, int length)
     }
     if (buf[0] & CC2500_STATE_RX_OVERFLOW){
         CS_UP(ctx);
-        OLOG_LOGE("CC2500: rx fifo is in state of overflow");
+        LOG_LOGE("CC2500: rx fifo is in state of overflow");
         cc2500_strobe(ctx, CC2500_SFRX);
         return buf[0] | CC2500_STATUS_CHIP_RDYn_BM;
     }

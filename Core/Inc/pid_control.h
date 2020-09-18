@@ -5,8 +5,7 @@
  *      Author: Florian Brenot
  */
 
-#ifndef __PID_CONTROL_H
-#define __PID_CONTROL_H
+#pragma once
 
 typedef struct __PID_Terms
 {
@@ -22,5 +21,3 @@ typedef struct __PID_History
 } PID_History;
 
 float PID_Compute(const PID_Terms *Terms, PID_History *History, float TimeDelta, float Setpoint, float ProcessVariable);
-
-#endif /* __PID_CONTROL_H */
