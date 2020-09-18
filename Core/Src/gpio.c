@@ -48,7 +48,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, Unknown_12_Pin|Unknown_13_Pin|Unknown_14_Pin|Unknown_1_Pin 
+  HAL_GPIO_WritePin(GPIOA, Unknown_2_Pin|Unknown_3_Pin|Unknown_4_Pin|Unknown_1_Pin 
                           |ESC_VCC_Pin|Not_Connected_1_Pin|LED_Red_Pin|RF_CSn_Pin 
                           |Test_Pad_Pin|Not_Connected_3_Pin|Not_Connected_4_Pin, GPIO_PIN_RESET);
 
@@ -58,7 +58,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pins : PAPin PAPin PAPin PAPin 
                            PAPin PAPin PAPin PAPin 
                            PAPin */
-  GPIO_InitStruct.Pin = Unknown_12_Pin|Unknown_13_Pin|Unknown_14_Pin|Unknown_1_Pin 
+  GPIO_InitStruct.Pin = Unknown_2_Pin|Unknown_3_Pin|Unknown_4_Pin|Unknown_1_Pin 
                           |ESC_VCC_Pin|Not_Connected_1_Pin|Test_Pad_Pin|Not_Connected_3_Pin 
                           |Not_Connected_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
