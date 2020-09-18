@@ -30,6 +30,7 @@
 #include <stdbool.h>
 #include "mpu6050.h"
 #include "pid_control.h"
+#include "SEGGER_RTT.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -103,6 +104,7 @@ int main(void)
     Error_Handler();
   }
 
+#if 0
   if (MPU6050_DMP_LoadFirmware(&mpu_handle) != MPU6050_Result_Ok)
   {
     Error_Handler();
@@ -112,6 +114,7 @@ int main(void)
   {
     Error_Handler();
   }
+#endif
 
   float gyro_integral = 0.0f;
   uint32_t gyro_tick = 0;
@@ -132,6 +135,10 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+//#define TEST_ALL 1
+#define TEST_LOG 1
+
+#if TEST_ALL
   while (1)
   {
     // Can be used for debug or maybe to cutoff tail motor ?
@@ -166,11 +173,23 @@ int main(void)
 
     float tail_output = PID_Compute(&tail_control, &tail_control_history, delta_tick, tail_setpoint, tail_processvariable);
     //__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, tail_output > 0.0 ? (uint32_t)tail_output : 0);
+  }
+#endif
 
+#if TEST_LOG
+  char r;
+
+  SEGGER_RTT_WriteString(0, "SEGGER Real-Time-Terminal Sample\r\n");
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
+  do {
+    r = SEGGER_RTT_WaitKey();
+    SEGGER_RTT_Write(0, &r, 1);
+    r++;
+  } while (1);
+#endif
     /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-  }
+  /* USER CODE BEGIN 3 */
   /* USER CODE END 3 */
 }
 
