@@ -30,9 +30,9 @@
 
 /* USER CODE END 1 */
 
-/** Configure pins as 
-        * Analog 
-        * Input 
+/** Configure pins as
+        * Analog
+        * Input
         * Output
         * EVENT_OUT
         * EXTI
@@ -48,18 +48,18 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, Unknown_2_Pin|Unknown_3_Pin|Unknown_4_Pin|Unknown_1_Pin 
-                          |ESC_VCC_Pin|Not_Connected_1_Pin|LED_Red_Pin|RF_CSn_Pin 
+  HAL_GPIO_WritePin(GPIOA, Unknown_2_Pin|Unknown_3_Pin|Unknown_4_Pin|Unknown_1_Pin
+                          |ESC_VCC_Pin|Not_Connected_1_Pin|LED_Red_Pin|RF_CSn_Pin
                           |Test_Pad_Pin|Not_Connected_3_Pin|Not_Connected_4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, Unused_Plug_Pin|Not_Connected_2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PAPin PAPin PAPin PAPin 
-                           PAPin PAPin PAPin PAPin 
+  /*Configure GPIO pins : PAPin PAPin PAPin PAPin
+                           PAPin PAPin PAPin PAPin
                            PAPin */
-  GPIO_InitStruct.Pin = Unknown_2_Pin|Unknown_3_Pin|Unknown_4_Pin|Unknown_1_Pin 
-                          |ESC_VCC_Pin|Not_Connected_1_Pin|Test_Pad_Pin|Not_Connected_3_Pin 
+  GPIO_InitStruct.Pin = Unknown_2_Pin|Unknown_3_Pin|Unknown_4_Pin|Unknown_1_Pin
+                          |ESC_VCC_Pin|Not_Connected_1_Pin|Test_Pad_Pin|Not_Connected_3_Pin
                           |Not_Connected_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
