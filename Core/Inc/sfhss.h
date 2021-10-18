@@ -8,6 +8,7 @@
 #ifndef SFHSS_H_
 #define SFHSS_H_
 
+#include "tim.h"
 #include "cc2500.h"
 
 #define SFHSS_COARSE                0
