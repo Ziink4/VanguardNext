@@ -20,6 +20,10 @@ extern "C" {
 #define LOG_LEVEL LOG_INFO
 #endif
 
+#ifdef DEBUG
+#define LOG_ENABLE 1
+#endif
+
 #if LOG_ENABLE
 #include <SEGGER_RTT.h>
 #define log_init()                SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP)

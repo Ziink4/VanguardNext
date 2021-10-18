@@ -4,6 +4,8 @@
 
 #include "log.h"
 
+#if LOG_ENABLE
+
 #include <stdarg.h>
 
 static const char BEGIN_FATAL[] = "\033[91mFATAL: ";
@@ -68,3 +70,6 @@ void log_dumpmem(const void* mem, size_t len)
         print_memline(addr, buf);
     }
 }
+
+#endif // LOG_ENABLE
+
