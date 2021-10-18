@@ -31,16 +31,12 @@ extern "C" {
 
 /* USER CODE END Includes */
 
-extern TIM_HandleTypeDef htim1;
-
 /* USER CODE BEGIN Private defines */
 // Timer macro for SFHSS
 #define HRTIMER_GETTIME() ((int32_t)__HAL_TIM_GET_COUNTER(&htim1))
 /* USER CODE END Private defines */
 
 void MX_TIM1_Init(void);
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN Prototypes */
 
