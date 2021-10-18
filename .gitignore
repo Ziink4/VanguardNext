@@ -54,3 +54,11 @@ dkms.conf
 # Binaries
 /Debug/
 /Release/
+
+# STM32CubeIDE files
+.cproject
+.project
+.mxproject
+.settings/
+*.launch
+
