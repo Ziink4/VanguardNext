@@ -32,6 +32,7 @@
 #include "log.h"
 #include "cc2500.h"
 #include "sfhss.h"
+#include "SEGGER_RTT.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -81,6 +82,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  SEGGER_RTT_Init();
   log_init();
   LOG_LOGD("HAL init done");
   /* USER CODE END Init */
@@ -178,14 +180,15 @@ int main(void)
 #endif
 
 #if TEST_ECHO
-  char r;
+  char r = 'Z';
 
-  LOG_LOGI("SEGGER Real-Time-Terminal Sample\r\n");
+  LOG_LOGI("Running echo test sample...");
 
   do {
+    LOG_LOGI("Waiting for a key press...");
     r = SEGGER_RTT_WaitKey();
-    SEGGER_RTT_Write(0, &r, 1);
     r++;
+    LOG_LOGI(&r);
   } while (1);
 #endif
 
