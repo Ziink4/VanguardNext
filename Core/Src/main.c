@@ -106,41 +106,51 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-//#define TEST_ALL 1
+#define TEST_ALL 1
 //#define TEST_ECHO 1
-#define TEST_CC2500 1
+//#define TEST_CC2500 1
 
 #if TEST_ALL
   // Gyro Interface
   MPU6050_t mpu_handle;
+  LOG_LOGD("Gyro init...");
   if (MPU6050_Init(&mpu_handle, &hi2c1, MPU6050_Device_0, MPU6050_Accelerometer_2G, MPU6050_Gyroscope_250s) != MPU6050_Result_Ok)
   {
+    LOG_LOGE("Gyro init failed");
     Error_Handler();
   }
 
   if (MPU6050_DMP_LoadFirmware(&mpu_handle) != MPU6050_Result_Ok)
   {
+    LOG_LOGE("Gyro firmware loading failed");
     Error_Handler();
   }
 
   if (MPU6050_DMP_SetState(&mpu_handle, true) != MPU6050_Result_Ok)
   {
+    LOG_LOGE("Gyro firmware init failed");
     Error_Handler();
   }
+
+  LOG_LOGD("Gyro init done");
 
   float gyro_integral = 0.0f;
   uint32_t gyro_tick = 0;
 
   // Init Gyro Status LED
-  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+  LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH1N);
 
   // Tail Control
   const PID_Terms tail_control = { 1.0f / 33.0f, 0.0f, 0.0f };
   PID_History tail_control_history = { 0.0f, 0.0f };
   uint32_t tail_tick = 0;
-
-  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
   uint32_t tail_max_output = 1000;
+
+  LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH2N);
+
+  // TIM1 Enable
+  LL_TIM_EnableAllOutputs(TIM1);
+  LL_TIM_EnableCounter(TIM1);
 
   while (1)
   {
@@ -149,6 +159,7 @@ int main(void)
 
     if (MPU6050_ReadGyroscope(&mpu_handle) != MPU6050_Result_Ok)
     {
+      LOG_LOGE("Gyro read failed");
       Error_Handler();
     }
     else
@@ -163,8 +174,17 @@ int main(void)
     // Gyroscope outputs from -32768 to 32767
     // We discard negative values, and divide the output by 33 to get an approximate output from 0 to 1000
     // (in reality 0 to 993 because of rounding)
+    if (mpu_handle.Gyroscope_Z == -32768 || mpu_handle.Gyroscope_Z == 32767)
+    {
+      LOG_LOGE("GYRO: %6d", mpu_handle.Gyroscope_Z);
+    }
+    else
+    {
+      LOG_LOGI("GYRO: %6d", mpu_handle.Gyroscope_Z);
+    }
+
     uint16_t gyro_led_output = mpu_handle.Gyroscope_Z < 0 ? 0 : (mpu_handle.Gyroscope_Z / 33);
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, gyro_led_output);
+    LL_TIM_OC_SetCompareCH1(TIM1, gyro_led_output);
 
     // Update PID for tail
     float tail_setpoint = 0;
@@ -195,12 +215,16 @@ int main(void)
 #if TEST_CC2500
   CC2500CTX cc2500_ctx;
 
+  LOG_LOGD("CC2500 init...");
+
   if (!cc2500_init(&cc2500_ctx, RF_CSn_GPIO_Port, RF_CSn_Pin, &hspi1))
   {
 	  Error_Handler();
   }
 
   LOG_LOGD("CC2500 init done");
+
+  LOG_LOGD("SFHSS init...");
 
   SFHSSCTX sfhss_ctx;
   sfhss_init(&sfhss_ctx, &cc2500_ctx);
