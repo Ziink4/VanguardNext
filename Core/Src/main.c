@@ -157,7 +157,7 @@ int main(void)
     // Can be used for debug or maybe to cutoff tail motor ?
     const bool button_pressed = (HAL_GPIO_ReadPin(Button_GPIO_Port, Button_Pin) == GPIO_PIN_RESET);
 
-    if (MPU6050_ReadGyroscope(&mpu_handle) != MPU6050_Result_Ok)
+    if (MPU6050_ReadAll(&mpu_handle) != MPU6050_Result_Ok)
     {
       LOG_LOGE("Gyro read failed");
       Error_Handler();
@@ -176,11 +176,11 @@ int main(void)
     // (in reality 0 to 993 because of rounding)
     if (mpu_handle.Gyroscope_Z == -32768 || mpu_handle.Gyroscope_Z == 32767)
     {
-      LOG_LOGE("GYRO: %6d %6d %6d", mpu_handle.Gyroscope_X, mpu_handle.Gyroscope_Y, mpu_handle.Gyroscope_Z);
+      LOG_LOGE("DATA: %6d %6d %6d %6d %6d %6d", mpu_handle.Gyroscope_X, mpu_handle.Gyroscope_Y, mpu_handle.Gyroscope_Z, mpu_handle.Accelerometer_X, mpu_handle.Accelerometer_Y, mpu_handle.Accelerometer_Z);
     }
     else
     {
-      LOG_LOGI("GYRO: %6d %6d %6d", mpu_handle.Gyroscope_X, mpu_handle.Gyroscope_Y, mpu_handle.Gyroscope_Z);
+      LOG_LOGI("DATA: %6d %6d %6d %6d %6d %6d", mpu_handle.Gyroscope_X, mpu_handle.Gyroscope_Y, mpu_handle.Gyroscope_Z, mpu_handle.Accelerometer_X, mpu_handle.Accelerometer_Y, mpu_handle.Accelerometer_Z);
     }
 
     uint16_t gyro_led_output = mpu_handle.Gyroscope_Z < 0 ? 0 : (mpu_handle.Gyroscope_Z / 33);
