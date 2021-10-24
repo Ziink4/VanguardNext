@@ -176,11 +176,11 @@ int main(void)
     // (in reality 0 to 993 because of rounding)
     if (mpu_handle.Gyroscope_Z == -32768 || mpu_handle.Gyroscope_Z == 32767)
     {
-      LOG_LOGE("GYRO: %6d", mpu_handle.Gyroscope_Z);
+      LOG_LOGE("GYRO: %6d %6d %6d", mpu_handle.Gyroscope_X, mpu_handle.Gyroscope_Y, mpu_handle.Gyroscope_Z);
     }
     else
     {
-      LOG_LOGI("GYRO: %6d", mpu_handle.Gyroscope_Z);
+      LOG_LOGI("GYRO: %6d %6d %6d", mpu_handle.Gyroscope_X, mpu_handle.Gyroscope_Y, mpu_handle.Gyroscope_Z);
     }
 
     uint16_t gyro_led_output = mpu_handle.Gyroscope_Z < 0 ? 0 : (mpu_handle.Gyroscope_Z / 33);
