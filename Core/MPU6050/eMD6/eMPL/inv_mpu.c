@@ -117,19 +117,19 @@ static inline int reg_int_cb(struct int_param_s *int_param)
 #define fabs(x)     (((x)>0)?(x):-(x))
 #else
 
-//fbrenot: Implementing the required functions for STM32F031K6
+//fbrenot: Implementing the required functions for this project
 #include "i2c.h"
-#include "log.h"
+#include "Log/log.h"
 
 #define INV_MPU6050_I2C_TIMEOUT 1000
 static inline HAL_StatusTypeDef INV_MPU_I2C_Write(unsigned char slave_addr, unsigned char reg_addr, unsigned char length, unsigned char *data)
 {
-  return HAL_I2C_Mem_Write(&hi2c1, slave_addr, reg_addr, I2C_MEMADD_SIZE_8BIT, data, length, INV_MPU6050_I2C_TIMEOUT);
+  return HAL_I2C_Mem_Write(&hi2c1, slave_addr << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, data, length, INV_MPU6050_I2C_TIMEOUT);
 }
 
 static inline HAL_StatusTypeDef INV_MPU_I2C_Read(unsigned char slave_addr, unsigned char reg_addr, unsigned char length, unsigned char *data)
 {
-  return HAL_I2C_Mem_Read(&hi2c1, slave_addr, reg_addr, I2C_MEMADD_SIZE_8BIT, data, length, INV_MPU6050_I2C_TIMEOUT);
+  return HAL_I2C_Mem_Read(&hi2c1, slave_addr << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, data, length, INV_MPU6050_I2C_TIMEOUT);
 }
 
 static inline void INV_MPU_Get_MS(unsigned long *out)
@@ -143,6 +143,12 @@ static inline void INV_MPU_Get_MS(unsigned long *out)
 #define get_ms      INV_MPU_Get_MS
 #define log_i       LOG_LOGI
 #define log_e       LOG_LOGE
+#define min(a,b) ((a<b)?a:b)
+
+static inline int reg_int_cb(struct int_param_s *int_param)
+{
+  return 0;
+}
 
 #endif
 
