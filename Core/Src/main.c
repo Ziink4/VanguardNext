@@ -118,7 +118,7 @@ int main(void)
   struct int_param_s int_param;
   inv_error_t result = mpu_init(&int_param);
   if (result) {
-      LOG_LOGE("Could not initialize gyro");
+    LOG_LOGE("Could not initialize gyro");
   }
   else
   {
@@ -163,21 +163,21 @@ int main(void)
 
   /* Platform-specific information. Kinda like a boardfile. */
   struct platform_data_s {
-      signed char orientation[9];
+    signed char orientation[9];
   };
 
   static struct platform_data_s gyro_pdata = {
       .orientation = { 1, 0, 0,
-                       0, 1, 0,
-                       0, 0, 1}
+          0, 1, 0,
+          0, 0, 1}
   };
 
   inv_set_gyro_orientation_and_scale(
-          inv_orientation_matrix_to_scalar(gyro_pdata.orientation),
-          (long)gyro_fsr<<15);
+      inv_orientation_matrix_to_scalar(gyro_pdata.orientation),
+      (long)gyro_fsr<<15);
   inv_set_accel_orientation_and_scale(
-          inv_orientation_matrix_to_scalar(gyro_pdata.orientation),
-          (long)accel_fsr<<15);
+      inv_orientation_matrix_to_scalar(gyro_pdata.orientation),
+      (long)accel_fsr<<15);
 
   r = dmp_load_motion_driver_firmware();
   r |= dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_pdata.orientation));
@@ -187,6 +187,7 @@ int main(void)
   r |= dmp_enable_feature(dmp_features);
   r |= dmp_set_fifo_rate(DEFAULT_MPU_HZ);
   r |= mpu_set_dmp_state(1);
+  unsigned char dmp_on = 1;
 
   if (r)
   {
@@ -195,6 +196,166 @@ int main(void)
   else
   {
     LOG_LOGI("DMP configuration done");
+  }
+
+  unsigned char lp_accel_mode = 0;
+#define ACCEL_ON        (0x01)
+#define GYRO_ON         (0x02)
+  unsigned char sensors = ACCEL_ON | GYRO_ON;
+  volatile unsigned char new_gyro = 0;
+  unsigned long next_temp_ms = 0;
+  unsigned int report = 0;
+
+  while(1)
+  {
+    unsigned long sensor_timestamp;
+    int new_data = 0;
+
+    timestamp = HAL_GetTick();
+
+    /* Temperature data doesn't need to be read with every gyro sample.
+     * Let's make them timer-based like the compass reads.
+     */
+    if (timestamp > next_temp_ms)
+    {
+#define TEMP_READ_MS    (500)
+      next_temp_ms = timestamp + TEMP_READ_MS;
+      new_temp = 1;
+    }
+
+    HAL_Delay(500);
+    new_gyro = 1;
+
+    if (!sensors || !new_gyro)
+    {
+      continue;
+    }
+
+    if (new_gyro && lp_accel_mode)
+    {
+      short accel_short[3];
+      long accel[3];
+      mpu_get_accel_reg(accel_short, &sensor_timestamp);
+      accel[0] = (long)accel_short[0];
+      accel[1] = (long)accel_short[1];
+      accel[2] = (long)accel_short[2];
+      inv_build_accel(accel, 0, sensor_timestamp);
+      new_data = 1;
+      new_gyro = 0;
+    }
+    else if (new_gyro && dmp_on)
+    {
+      short gyro[3], accel_short[3], sensors;
+      unsigned char more;
+      long accel[3], quat[4], temperature;
+      /* This function gets new data from the FIFO when the DMP is in
+       * use. The FIFO can contain any combination of gyro, accel,
+       * quaternion, and gesture data. The sensors parameter tells the
+       * caller which data fields were actually populated with new data.
+       * For example, if sensors == (INV_XYZ_GYRO | INV_WXYZ_QUAT), then
+       * the FIFO isn't being filled with accel data.
+       * The driver parses the gesture data to determine if a gesture
+       * event has occurred; on an event, the application will be notified
+       * via a callback (assuming that a callback function was properly
+       * registered). The more parameter is non-zero if there are
+       * leftover packets in the FIFO.
+       */
+      if (dmp_read_fifo(gyro, accel_short, quat, &sensor_timestamp, &sensors, &more))
+      {
+        LOG_LOGE("Failed to read DMP FIFO");
+      }
+
+      if (!more)
+      {
+        new_gyro = 0;
+      }
+
+      if (sensors & INV_XYZ_GYRO)
+      {
+        /* Push the new data to the MPL. */
+        inv_build_gyro(gyro, sensor_timestamp);
+        new_data = 1;
+        if (new_temp)
+        {
+          new_temp = 0;
+          /* Temperature only used for gyro temp comp. */
+          mpu_get_temperature(&temperature, &sensor_timestamp);
+          inv_build_temp(temperature, sensor_timestamp);
+        }
+      }
+      if (sensors & INV_XYZ_ACCEL)
+      {
+        accel[0] = (long)accel_short[0];
+        accel[1] = (long)accel_short[1];
+        accel[2] = (long)accel_short[2];
+        inv_build_accel(accel, 0, sensor_timestamp);
+        new_data = 1;
+      }
+      if (sensors & INV_WXYZ_QUAT)
+      {
+        inv_build_quat(quat, 0, sensor_timestamp);
+        new_data = 1;
+      }
+    }
+    else if (new_gyro)
+    {
+      short gyro[3], accel_short[3];
+      unsigned char sensors, more;
+      long accel[3], temperature;
+      /* This function gets new data from the FIFO. The FIFO can contain
+       * gyro, accel, both, or neither. The sensors parameter tells the
+       * caller which data fields were actually populated with new data.
+       * For example, if sensors == INV_XYZ_GYRO, then the FIFO isn't
+       * being filled with accel data. The more parameter is non-zero if
+       * there are leftover packets in the FIFO. The HAL can use this
+       * information to increase the frequency at which this function is
+       * called.
+       */
+      new_gyro = 0;
+      mpu_read_fifo(gyro, accel_short, &sensor_timestamp,
+          &sensors, &more);
+      if (more)
+        new_gyro = 1;
+      if (sensors & INV_XYZ_GYRO) {
+        /* Push the new data to the MPL. */
+        inv_build_gyro(gyro, sensor_timestamp);
+        new_data = 1;
+        if (new_temp) {
+          new_temp = 0;
+          /* Temperature only used for gyro temp comp. */
+          mpu_get_temperature(&temperature, &sensor_timestamp);
+          inv_build_temp(temperature, sensor_timestamp);
+        }
+      }
+      if (sensors & INV_XYZ_ACCEL)
+      {
+        accel[0] = (long)accel_short[0];
+        accel[1] = (long)accel_short[1];
+        accel[2] = (long)accel_short[2];
+        inv_build_accel(accel, 0, sensor_timestamp);
+        new_data = 1;
+      }
+    }
+
+    if (new_data)
+    {
+      if (inv_execute_on_data())
+      {
+        LOG_LOGE("Failed to process data");
+      }
+
+      int8_t accuracy;
+      float float_data[3] = {0};
+      if (inv_get_sensor_type_linear_acceleration(float_data, &accuracy, (inv_time_t*)&timestamp))
+      {
+        LOG_LOGI("Linear Accel: %7.5f %7.5f %7.5f\r\n", float_data[0], float_data[1], float_data[2]);
+       }
+
+      if (inv_get_sensor_type_gyroscope_raw(float_data, &accuracy, (inv_time_t*)&timestamp))
+      {
+        LOG_LOGI("Gravity Vector: %7.5f %7.5f %7.5f\r\n", float_data[0], float_data[1], float_data[2]);
+      }
+    }
   }
 
 #endif
