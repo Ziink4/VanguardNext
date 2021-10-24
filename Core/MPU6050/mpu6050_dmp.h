@@ -25,4 +25,14 @@
 #define MPU6050_DMP_FIRMWARE_START_ADDR 0x400
 #define MPU6050_DMP_FIRMWARE_LOAD_CHUNK 16
 
+MPU6050_Result_t MPU6050_DMP_WriteMemory(MPU6050_t *DataStruct, uint16_t mem_addr, uint16_t length, const uint8_t *data);
+
+MPU6050_Result_t MPU6050_DMP_ReadMemory(MPU6050_t *DataStruct, uint16_t mem_addr, uint16_t length, uint8_t *data);
+
+MPU6050_Result_t MPU6050_DMP_LoadFirmware(MPU6050_t *DataStruct);
+
+MPU6050_Result_t MPU6050_DMP_ResetFIFO(MPU6050_t *DataStruct, bool dmp_enabled, bool int_enabled, uint8_t fifo_enable);
+
+MPU6050_Result_t MPU6050_DMP_SetState(MPU6050_t *DataStruct, bool enabled);
+
 #endif /* __MPU6050_DMP_H */
