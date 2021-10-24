@@ -8,19 +8,35 @@ import re
 from threading import Thread
 
 
-def animate(i, x_data, y_data, z_data, fps_text, last_time, max_x):
+def animate(i, rx_data, ry_data, rz_data, x_data, y_data, z_data, fps_text, last_time, max_x):
+    rx_values = list(rx_data.get_data()[1])
+    ry_values = list(ry_data.get_data()[1])
+    rz_values = list(rz_data.get_data()[1])
+
     x_values = list(x_data.get_data()[1])
     y_values = list(y_data.get_data()[1])
     z_values = list(z_data.get_data()[1])
 
     if len(x_values) < max_x:
-        x_values += [i[0]]
-        y_values += [i[1]]
-        z_values += [i[2]]
+        rx_values += [i[0]]
+        ry_values += [i[1]]
+        rz_values += [i[2]]
+
+        x_values += [i[3]]
+        y_values += [i[4]]
+        z_values += [i[5]]
     else:
-        x_values = x_values[1:] + [i[0]]
-        y_values = y_values[1:] + [i[1]]
-        z_values = z_values[1:] + [i[2]]
+        rx_values = rx_values[1:] + [i[0]]
+        ry_values = ry_values[1:] + [i[1]]
+        rz_values = rz_values[1:] + [i[2]]
+
+        x_values = x_values[1:] + [i[3]]
+        y_values = y_values[1:] + [i[4]]
+        z_values = z_values[1:] + [i[5]]
+
+    rx_data.set_data(range(len(rx_values)), rx_values)
+    ry_data.set_data(range(len(ry_values)), ry_values)
+    rz_data.set_data(range(len(rz_values)), rz_values)
 
     x_data.set_data(range(len(x_values)), x_values)
     y_data.set_data(range(len(y_values)), y_values)
@@ -46,29 +62,37 @@ def open_gyro(lines):
 
 
 def read_gyro(lines):
-    regex = re.compile(r".*GYRO: +(-?\d*) +(-?\d*) +(-?\d*)\n")
+    regex = re.compile(r".*DATA: +(-?\d*) +(-?\d*) +(-?\d*) +(-?\d*) +(-?\d*) +(-?\d*)\n")
     while True:
         if lines:
             line = lines[-1]
-            result = re.findall(regex, line)
-            if result:
-                yield int(result[0][0]), int(result[0][1]), int(result[0][2])
+            match = re.findall(regex, line)
+            if match and len(match[0]) == 6:
+                yield [int(v) for v in match[0]]
 
 
 def main():
     # Setting up the plot
     fig = plt.figure("Raw Sensor Data")
-    ax1 = fig.add_subplot(1, 1, 1)
-    x_data, = ax1.plot([0], [0], 'r', label='X - roll')
-    y_data, = ax1.plot([0], [0], 'g', label='Y - pitch')
-    z_data, = ax1.plot([0], [0], 'b', label='Z - yaw')
-    fps_text = ax1.text(0.97, 0.03, "", transform=ax1.transAxes, ha="right", va="top")
+    (ax1, ax2) = fig.subplots(2, sharex=True, sharey=True)
+
+    ax1.set_title('Angular Velocity')
+    rx_data, = ax1.plot([0], [0], 'r', label='RX - roll')
+    ry_data, = ax1.plot([0], [0], 'g', label='RY - pitch')
+    rz_data, = ax1.plot([0], [0], 'b', label='RZ - yaw')
     ax1.legend()
 
-    plt.ylim(-32768, 32767)
+    ax2.set_title('Linear Acceleration')
+    x_data, = ax2.plot([0], [0], 'r', label='X - longitudinal')
+    y_data, = ax2.plot([0], [0], 'g', label='Y - lateral')
+    z_data, = ax2.plot([0], [0], 'b', label='Z - vertical')
+    ax2.legend()
+
+    fps_text = ax1.text(0.97, 0.03, "", transform=ax1.transAxes, ha="right", va="top")
 
     MAX_X = 1000
     plt.xlim(0, MAX_X)
+    plt.ylim(-32768, 32767)
 
     LINES = deque(maxlen=1)
     LAST_TIME = {0: time.time()}
@@ -78,7 +102,7 @@ def main():
     ani = FuncAnimation(fig,
                         animate,
                         read_gyro(LINES),
-                        fargs=(x_data, y_data, z_data, fps_text, LAST_TIME, MAX_X),
+                        fargs=(rx_data, ry_data, rz_data, x_data, y_data, z_data, fps_text, LAST_TIME, MAX_X),
                         interval=0)
 
     plt.show()
@@ -88,4 +112,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
