@@ -56,10 +56,11 @@ dkms.conf
 /Release/
 
 # STM32CubeIDE files
-.cproject
-.project
-.mxproject
-.settings/
-*.launch
+#.cproject
+#.project
+#.mxproject
+#.settings/
+#*.launch
 
+# PyCharm files
 Visualization/.idea/
