@@ -27,12 +27,17 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
-#include "mpu6050.h"
+#include "MPU6050/mpu6050.h"
 #include "pid_control.h"
-#include "log.h"
-#include "cc2500.h"
-#include "sfhss.h"
-#include "SEGGER_RTT.h"
+#include "Log/log.h"
+#include "CC2500/cc2500.h"
+#include "SFHSS/sfhss.h"
+#include "SEGGER_RTT/SEGGER_RTT.h"
+#include "mltypes.h"
+#include "MPU6050/eMD6/eMPL/inv_mpu.h"
+#include "MPU6050/eMD6/eMPL/inv_mpu_dmp_motion_driver.h"
+#include "MPU6050/eMD6/mllite/invensense.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,7 +68,10 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+#define TEST_INV_MPU 1
+//#define TEST_MPU 1
+//#define TEST_ECHO 1
+//#define TEST_CC2500 1
 /* USER CODE END 0 */
 
 /**
@@ -106,11 +114,93 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-#define TEST_ALL 1
-//#define TEST_ECHO 1
-//#define TEST_CC2500 1
+#if TEST_INV_MPU
+  struct int_param_s int_param;
+  inv_error_t result = mpu_init(&int_param);
+  if (result) {
+      LOG_LOGE("Could not initialize gyro");
+  }
+  else
+  {
+    LOG_LOGI("Gyro init done");
+  }
 
-#if TEST_ALL
+  /* Get/set hardware configuration. Start gyro. */
+  /* Wake up all sensors. */
+  int r;
+  r = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+  /* Push both gyro and accel data into the FIFO. */
+  r |= mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+
+#define DEFAULT_MPU_HZ  (20)
+  r |= mpu_set_sample_rate(DEFAULT_MPU_HZ);
+  /* Read back configuration in case it was set improperly. */
+  unsigned char accel_fsr,  new_temp = 0;
+  unsigned short gyro_rate, gyro_fsr;
+  unsigned long timestamp;
+
+  r |= mpu_get_sample_rate(&gyro_rate);
+  r |= mpu_get_gyro_fsr(&gyro_fsr);
+  r |= mpu_get_accel_fsr(&accel_fsr);
+
+  if (r)
+  {
+    LOG_LOGE("Could not configure sensors");
+  }
+  else
+  {
+    LOG_LOGI("Sensor configuration done");
+  }
+
+  /* Sync driver configuration with MPL. */
+  /* Sample rate expected in microseconds. */
+  inv_set_gyro_sample_rate(1000000L / gyro_rate);
+  inv_set_accel_sample_rate(1000000L / gyro_rate);
+
+  /* Set chip-to-body orientation matrix.
+   * Set hardware units to dps/g's/degrees scaling factor.
+   */
+
+  /* Platform-specific information. Kinda like a boardfile. */
+  struct platform_data_s {
+      signed char orientation[9];
+  };
+
+  static struct platform_data_s gyro_pdata = {
+      .orientation = { 1, 0, 0,
+                       0, 1, 0,
+                       0, 0, 1}
+  };
+
+  inv_set_gyro_orientation_and_scale(
+          inv_orientation_matrix_to_scalar(gyro_pdata.orientation),
+          (long)gyro_fsr<<15);
+  inv_set_accel_orientation_and_scale(
+          inv_orientation_matrix_to_scalar(gyro_pdata.orientation),
+          (long)accel_fsr<<15);
+
+  r = dmp_load_motion_driver_firmware();
+  r |= dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_pdata.orientation));
+
+  unsigned short dmp_features = DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_SEND_RAW_ACCEL | DMP_FEATURE_SEND_CAL_GYRO |
+      DMP_FEATURE_GYRO_CAL;
+  r |= dmp_enable_feature(dmp_features);
+  r |= dmp_set_fifo_rate(DEFAULT_MPU_HZ);
+  r |= mpu_set_dmp_state(1);
+
+  if (r)
+  {
+    LOG_LOGE("Could not configure DMP");
+  }
+  else
+  {
+    LOG_LOGI("DMP configuration done");
+  }
+
+#endif
+
+
+#if TEST_MPU
   // Gyro Interface
   MPU6050_t mpu_handle;
   LOG_LOGD("Gyro init...");
