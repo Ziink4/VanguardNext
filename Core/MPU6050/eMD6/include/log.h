@@ -340,7 +340,7 @@ static inline void __print_result_location(int result,
 					   const char *file,
 					   const char *func, int line)
 {
-	MPL_LOGE("%s|%s|%d returning %d\n", file, func, line, result);
+	//FIXME: fbrenot: MPL_LOGE("%s|%s|%d returning %d\n", file, func, line, result);
 }
 
 #ifdef _WIN32
