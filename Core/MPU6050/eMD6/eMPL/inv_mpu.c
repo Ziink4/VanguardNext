@@ -132,10 +132,15 @@ static inline HAL_StatusTypeDef INV_MPU_I2C_Read(unsigned char slave_addr, unsig
   return HAL_I2C_Mem_Read(&hi2c1, slave_addr, reg_addr, I2C_MEMADD_SIZE_8BIT, data, length, INV_MPU6050_I2C_TIMEOUT);
 }
 
+static inline void INV_MPU_Get_MS(unsigned long *out)
+{
+  *out = HAL_GetTick();
+}
+
 #define i2c_write   INV_MPU_I2C_Write
 #define i2c_read    INV_MPU_I2C_Read
 #define delay_ms    HAL_Delay
-#define get_ms      HAL_GetTick
+#define get_ms      INV_MPU_Get_MS
 #define log_i       LOG_LOGI
 #define log_e       LOG_LOGE
 
