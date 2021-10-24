@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 #if LOG_ENABLE
-#include <SEGGER_RTT.h>
+#include <SEGGER_RTT/SEGGER_RTT.h>
 #define log_init()                SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP)
 #define log_write(buf, len)       SEGGER_RTT_Write(0, (buf), (len))
 #define log_printf(...)           SEGGER_RTT_printf(0, __VA_ARGS__)

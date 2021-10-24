@@ -9,7 +9,7 @@
 #define SFHSS_H_
 
 #include "tim.h"
-#include "cc2500.h"
+#include "CC2500/cc2500.h"
 
 #define SFHSS_COARSE                0
 #define SFHSS_FREQ0_VAL             0xC4

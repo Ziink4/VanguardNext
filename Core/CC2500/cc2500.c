@@ -6,7 +6,7 @@
  */
 
 #include "cc2500.h"
-#include "log.h"
+#include "Log/log.h"
 
 #define CS_UP(ctx)      HAL_GPIO_WritePin((ctx)->selector.ch, (ctx)->selector.pin, GPIO_PIN_SET)
 #define CS_DOWN(ctx)    HAL_GPIO_WritePin((ctx)->selector.ch, (ctx)->selector.pin, GPIO_PIN_RESET)
