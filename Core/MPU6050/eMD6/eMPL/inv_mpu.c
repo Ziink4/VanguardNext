@@ -116,7 +116,29 @@ static inline int reg_int_cb(struct int_param_s *int_param)
 #define labs        abs
 #define fabs(x)     (((x)>0)?(x):-(x))
 #else
-#error  Gyro driver is missing the system layer implementations.
+
+//fbrenot: Implementing the required functions for STM32F031K6
+#include "i2c.h"
+#include "log.h"
+
+#define INV_MPU6050_I2C_TIMEOUT 1000
+static inline HAL_StatusTypeDef INV_MPU_I2C_Write(unsigned char slave_addr, unsigned char reg_addr, unsigned char length, unsigned char *data)
+{
+  return HAL_I2C_Mem_Write(&hi2c1, slave_addr, reg_addr, I2C_MEMADD_SIZE_8BIT, data, length, INV_MPU6050_I2C_TIMEOUT);
+}
+
+static inline HAL_StatusTypeDef INV_MPU_I2C_Read(unsigned char slave_addr, unsigned char reg_addr, unsigned char length, unsigned char *data)
+{
+  return HAL_I2C_Mem_Read(&hi2c1, slave_addr, reg_addr, I2C_MEMADD_SIZE_8BIT, data, length, INV_MPU6050_I2C_TIMEOUT);
+}
+
+#define i2c_write   INV_MPU_I2C_Write
+#define i2c_read    INV_MPU_I2C_Read
+#define delay_ms    HAL_Delay
+#define get_ms      HAL_GetTick
+#define log_i       LOG_LOGI
+#define log_e       LOG_LOGE
+
 #endif
 
 #if !defined MPU6050 && !defined MPU9150 && !defined MPU6500 && !defined MPU9250
